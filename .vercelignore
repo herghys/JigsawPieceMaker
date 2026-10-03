@@ -1,4 +1,6 @@
-# Kept in git for local XAMPP dev, excluded from Vercel deploys
-# (legacy local backend + seed; the cloud path is api/*.js + Supabase).
-local-api/
-db.sql
+# Vercel is API-only: deploy the serverless functions, nothing else.
+# (The frontend lives on GitHub Pages; local dev files stay in git.)
+*
+!api/
+!api/**
+!vercel.json
