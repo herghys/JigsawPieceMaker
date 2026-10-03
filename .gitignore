@@ -1,0 +1,20 @@
+# Dependencies / deploy
+node_modules/
+.vercel/
+
+# Secrets (Supabase keys live in Vercel dashboard, never here)
+.env
+.env.local
+.env.*.local
+
+# PHP (local XAMPP dev only)
+/vendor/
+
+# OS / editors
+Thumbs.db
+.DS_Store
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
