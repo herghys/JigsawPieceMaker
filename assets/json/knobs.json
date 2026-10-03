@@ -1,0 +1,91 @@
+{
+  "tabSizeRatioDefault": 0.2,
+  "templates": [
+    {
+      "id": "classic",
+      "name": "Classic",
+      "description": "Round head, narrow neck",
+      "controlPoints": [
+        [0.0, 0.0],
+        [0.34, 0.0],
+        [0.37, 0.2],
+        [0.33, 0.4],
+        [0.38, 0.65],
+        [0.5, 0.85],
+        [0.62, 0.65],
+        [0.67, 0.4],
+        [0.63, 0.2],
+        [0.66, 0.0],
+        [1.0, 0.0]
+      ]
+    },
+    {
+      "id": "classic_rounded",
+      "name": "Classic Rounded",
+      "description": "Classic with a slightly flatter head",
+      "controlPoints": [
+        [0.0, 0.0],
+        [0.34, 0.0],
+        [0.37, 0.2],
+        [0.33, 0.4],
+        [0.38, 0.65],
+        [0.5, 0.75],
+        [0.62, 0.65],
+        [0.67, 0.4],
+        [0.63, 0.2],
+        [0.66, 0.0],
+        [1.0, 0.0]
+      ]
+    },
+    {
+      "id": "rounded",
+      "name": "Rounded",
+      "description": "Soft wide bump, no pinched neck",
+      "controlPoints": [
+        [0.0, 0.0],
+        [0.34, 0.0],
+        [0.38, 0.65],
+        [0.5, 0.85],
+        [0.62, 0.65],
+        [0.66, 0.0],
+        [1.0, 0.0]
+      ]
+    },
+    {
+      "id": "bulb",
+      "name": "Bulb",
+      "description": "Tall round bulb with deep neck",
+      "controlPoints": [
+        [0.0, 0.0],
+        [0.38, 0.0],
+        [0.4, 0.1],
+        [0.32, 0.35],
+        [0.36, 0.8],
+        [0.5, 1.0],
+        [0.64, 0.8],
+        [0.68, 0.35],
+        [0.6, 0.1],
+        [0.62, 0.0],
+        [1.0, 0.0]
+      ]
+    },
+    {
+      "id": "arrowhead",
+      "name": "Arrowhead",
+      "description": "Pointed triangular-ish tab",
+      "controlPoints": [
+        [0.0, 0.0],
+        [0.36, 0.0],
+        [0.4, 0.15],
+        [0.35, 0.3],
+        [0.42, 0.6],
+        [0.5, 0.8],
+        [0.58, 0.6],
+        [0.65, 0.3],
+        [0.6, 0.15],
+        [0.64, 0.0],
+        [1.0, 0.0]
+      ]
+    }
+  ]
+}

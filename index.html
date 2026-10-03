@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jigsaw Piece Creator</title>
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="stylesheet" href="assets/styles/styles.css?v=21">
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container">
+    <span class="navbar-brand">Jigsaw Piece Creator</span>
+    <span class="navbar-text">PNG cut sheet | runs in your browser</span> <a class="navbar-bmc" href="https://buymeacoffee.com/herghys" target="_blank" rel="noopener"><img src="assets/images/bmc-button.png" alt="Buy me a coffee"></a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>Jigsaw Piece Creator</h1>
+    <div class="lead">
+      <p>Turn any picture into printable jigsaw pieces. Pick what you want to do:</p>
+    </div>
+    <p>
+      <a class="btn btn-success btn-lg" href="creator/">Create puzzle</a>
+      <a id="editorBtn" class="btn btn-default btn-lg disabled" href="editor/" aria-disabled="true">Edge editor</a>
+    </p>
+    <p id="editorNote" class="text-muted">Checking connection...</p>
+    <ol>
+      <li><b>Create puzzle:</b> upload an image, pick a knob profile, set the tiling, download a spaced PNG cut sheet.</li>
+      <li><b>Edge editor:</b> design custom knob profiles in the browser. Needs a connection; it stays greyed out while unreachable (the create page then falls back to the default presets).</li>
+    </ol>
+  </div>
+
+  <hr>
+  <footer>
+    <p>&copy; 2026 - Jigsaw Piece Creator</p>
+  </footer>
+
+</div>
+
+<script src="assets/js/config.js"></script>
+<script>window.JIGSAW_LOCAL_API = "api/knobs.php";</script>
+<script src="assets/js/api-client.js"></script>
+<script>
+// Gate the editor on DB connectivity: enabled only when the API reports db:true.
+(function () {
+  var btn = document.getElementById("editorBtn");
+  var note = document.getElementById("editorNote");
+  function greyed(reason) {
+    btn.classList.add("disabled");
+    btn.setAttribute("aria-disabled", "true");
+    btn.addEventListener("click", function (e) { e.preventDefault(); });
+    note.textContent = reason;
+  }
+  window.JigsawAPI.call("status", "status", {})
+    .then(function (j) {
+      if (j && j.db) {
+        btn.classList.remove("disabled");
+        btn.setAttribute("aria-disabled", "false");
+        note.textContent = "Connected. Edge editor is available.";
+      } else {
+        greyed("Unreachable. Edge editor is greyed out. Create puzzle still works (default presets).");
+      }
+    })
+    .catch(function () {
+      greyed("Unreachable. Edge editor is greyed out. Create puzzle still works (default presets).");
+    });
+})();
+</script>
+</body>
+</html>

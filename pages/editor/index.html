@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge editor | Jigsaw Piece Creator</title>
+<link rel="icon" type="image/svg+xml" href="../../assets/images/favicon.svg">
+<link rel="stylesheet" href="../../assets/styles/styles.css?v=21">
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container">
+    <a class="navbar-brand navbar-link" href="../../">Jigsaw Piece Creator</a>
+    <span class="navbar-text"><a class="navbar-link" href="../creator/">Create puzzle</a> | Edge editor</span> <a class="navbar-bmc" href="https://buymeacoffee.com/herghys" target="_blank" rel="noopener"><img src="../../assets/images/bmc-button.png" alt="Buy me a coffee"></a></div>
+</nav>
+
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>Edge editor</h1>
+    <div class="lead">
+      <p>Design knob profiles: drag the control points on the curve, check the piece preview, then request a save. Built-in profiles can be tweaked but not deleted.</p>
+    </div>
+    <div id="dbAlert"></div>
+  </div>
+
+  <fieldset id="editorForm" disabled>
+  <div class="row">
+    <div class="col-side">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Profile</h2></div>
+        <div class="panel-body">
+          <label>Profile
+            <select id="profileSelect" class="form-control"></select>
+          </label>
+          <p style="margin-top:10px">
+            <button id="newBtn" type="button" class="btn btn-default">New profile</button>
+          </p>
+          <p id="builtinNote" class="help-block"></p>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Details</h2></div>
+        <div class="panel-body">
+          <label>Name<input type="text" id="fldName" class="form-control" maxlength="80"></label>
+          <label style="margin-top:8px">Slug<input type="text" id="fldSlug" class="form-control" maxlength="32"></label>
+          <label style="margin-top:8px">Description<input type="text" id="fldDesc" class="form-control" maxlength="255"></label>
+          <p style="margin-top:12px">
+            <button id="saveBtn" type="button" class="btn btn-success">Request Save to db</button>
+            <button id="resetBtn" type="button" class="btn btn-default">Reset</button>
+            <button id="deleteBtn" type="button" class="btn btn-default">Request Delete</button>
+          </p>
+          <div id="saveAlert"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="col-center">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Curve</h2></div>
+        <div class="panel-body">
+          <canvas id="curveCanvas" class="canvas-board" width="720" height="360"></canvas>
+          <p class="help-block">X = position along the edge (0-1), Y = knob height. The smooth line is the Catmull-Rom curve through your points. Exactly what the cutter cuts.</p>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Piece preview</h2></div>
+        <div class="panel-body">
+          <canvas id="pieceCanvas" class="canvas-board" width="340" height="340"></canvas>
+          <p class="help-block">One test piece using this profile on all four edges (top/right out, bottom/left in).</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="col-side">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Control points</h2></div>
+        <div class="panel-body">
+          <p>
+            <button id="addPointBtn" type="button" class="btn btn-default">Add Point</button>
+            <button id="delPointBtn" type="button" class="btn btn-default">Delete selected</button>
+          </p>
+          <ol id="pointList" class="point-list"></ol>
+          <p class="help-block">Hover a row for +↑ / +↓ to insert around it, or Add Point to append before the locked end. Drag points on the curve, or double-click it. First point must stay [0, 0]; last [1, 0] stays locked.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </fieldset>
+
+  <hr>
+  <footer>
+    <p>&copy; 2026 - Jigsaw Piece Creator | <a href="../../">Home</a> | <a href="../creator/">Create puzzle</a></p>
+  </footer>
+
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script>window.JIGSAW_LOCAL_API = "../../api/knobs.php";</script>
+<script src="../../assets/js/api-client.js"></script>
+<script src="../../assets/js/editor.js?v=14"></script>
+</body>
+</html>

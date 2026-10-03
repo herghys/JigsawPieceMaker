@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create puzzle | Jigsaw Piece Creator</title>
+<link rel="icon" type="image/svg+xml" href="../../assets/images/favicon.svg">
+<link rel="stylesheet" href="../../assets/styles/styles.css?v=21">
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container">
+    <a class="navbar-brand navbar-link" href="../../">Jigsaw Piece Creator</a>
+    <span class="navbar-text">Create puzzle | <a class="navbar-link" href="../editor/">Edge editor</a></span> <a class="navbar-bmc" href="https://buymeacoffee.com/herghys" target="_blank" rel="noopener"><img src="../../assets/images/bmc-button.png" alt="Buy me a coffee"></a></div>
+</nav>
+
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>Create puzzle</h1>
+    <div class="lead">
+      <p>Upload an image, pick a knob profile, set the tiling, and download a spaced PNG cut sheet.</p>
+    </div>
+    <ol>
+      <li>Click <b>Upload file</b> and choose the picture you want to cut up.</li>
+      <li>Pick a <b>knob profile</b> below, or mix them randomly like the game does.</li>
+      <li>Set the <b>tiling</b> (columns and rows) and a seed. Same seed gives the same cut.</li>
+      <li>Optionally pick a <b>paper size</b> with an <b>edge margin</b>. Otherwise pieces export at exact spacing. Click <b>Download cut sheet</b>.</li>
+    </ol>
+  </div>
+
+  <div class="upload-actions">
+    <label class="btn btn-success fileinput-button" title="Upload file">
+      Upload file
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </label>
+    <span class="upload-actions-separator">or</span>
+    <button id="sampleBtn" type="button" class="btn btn-default">Use sample</button>
+  </div>
+  <div id="dropzone" class="hint-drop" tabindex="0"><i>Drop image here to upload</i></div>
+
+  <div class="row">
+    <div class="col-side col-left">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Source image</h2></div>
+        <div class="panel-body">
+          <p id="imgInfo" class="text-muted">No image yet. Upload one or use the sample.</p>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Knob profile</h2></div>
+        <div id="knobList" class="list-group"><span class="list-group-item">Loading profiles...</span></div>
+        <div class="panel-body"><p id="knobSource" class="help-block"></p></div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Tune knob (runtime)</h2></div>
+        <div class="panel-body">
+          <p id="tuneNote" class="help-block"></p>
+          <div id="tuneBody">
+            <canvas id="tuneCurve"></canvas>
+            <ol id="tuneList" class="point-list"></ol>
+            <div class="form-row" style="margin-top:10px">
+              <label>Save as<input type="text" id="tuneName" class="form-control" maxlength="80"></label>
+            </div>
+            <p>
+              <button id="tuneResetBtn" type="button" class="btn btn-default">Reset tune</button>
+              <button id="tuneSaveBtn" type="button" class="btn btn-success">Request Save to db</button>
+            </p>
+            <p id="tuneMsg" class="help-block"></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="col-center">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Preview: assembled (actual image size ratio)</h2></div>
+        <div class="panel-body">
+          <canvas id="preview" class="preview-canvas"></canvas>
+          <p class="help-block">Lines show exactly where pieces will be cut. Neighboring edges always match: one side's knob is the other side's hole.</p>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Preview: print sheet (spaced)</h2></div>
+        <div class="panel-body">
+          <canvas id="sheetPreview" class="preview-canvas"></canvas>
+          <p class="help-block">Individual pieces with bleed and spacing. With a paper size set, this is the full paper preview including the edge margin.</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="col-side">
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Tiling</h2></div>
+        <div class="panel-body">
+          <div class="form-row">
+            <label>Columns (X)<input type="number" id="cols" class="form-control" value="4" min="1" max="20"></label>
+            <label>Rows (Y)<input type="number" id="rows" class="form-control" value="3" min="1" max="20"></label>
+          </div>
+          <div class="form-row">
+            <label>Seed<input type="number" id="seed" class="form-control" value="12345"></label>
+            <label>&nbsp;<button id="shuffleBtn" type="button" class="btn btn-default">Randomize</button></label>
+          </div>
+          <label>Knob depth
+            <span class="slider-row"><input type="range" id="tabSize" min="0.1" max="0.4" step="0.01" value="0.2"><output id="tabSizeVal">0.20</output></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><h2 class="panel-title">Cut sheet</h2></div>
+        <div class="panel-body">
+          <div class="form-row">
+            <label>Piece size (px)<input type="number" id="piecePx" class="form-control" value="300" min="80" max="800" step="10"></label>
+            <label>Gap (px)<input type="number" id="gapPx" class="form-control" value="32" min="0" max="300" step="2"></label>
+          </div>
+          <div class="form-row">
+            <label>Paper size
+              <select id="paperSize" class="form-control">
+                <option value="none" selected>No paper (pieces only)</option>
+                <option value="A4P">A4 portrait</option>
+                <option value="A4L">A4 landscape</option>
+                <option value="A3P">A3 portrait</option>
+                <option value="A3L">A3 landscape</option>
+                <option value="LP">US Letter portrait</option>
+                <option value="LL">US Letter landscape</option>
+              </select>
+            </label>
+            <label>Print DPI
+              <select id="printDpi" class="form-control">
+                <option value="150">150</option>
+                <option value="300" selected>300</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Edge margin (mm)<input type="number" id="edgeMargin" class="form-control" value="10" min="0" max="50"></label>
+            <label>Fit to paper
+              <select id="paperFit" class="form-control">
+                <option value="fit" selected>Fit (keep shape)</option>
+                <option value="stretch">Stretch (fill paper)</option>
+              </select>
+            </label>
+          </div>
+          <p class="help-block">Paper, margin and fit only apply when a paper size is chosen. Without paper, pieces export at exact size with the gap above.</p>
+          <div class="checkbox-row">
+            <label class="checkbox-inline"><input type="checkbox" id="bgWhite"> White background (no-paper only)</label>
+            <label class="checkbox-inline"><input type="checkbox" id="cutLines" checked> Cut guide outlines</label>
+          </div>
+          <div id="sheetInfo" class="alert alert-info">Set an image and tiling to see the sheet size.</div>
+          <button id="exportSheetBtn" type="button" class="btn btn-success">Download cut sheet</button>
+          <button id="exportAssembledBtn" type="button" class="btn btn-default">Download assembled</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+  <footer>
+    <p>&copy; 2026 - Jigsaw Piece Creator | <a href="../../">Home</a></p>
+  </footer>
+
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script>window.JIGSAW_LOCAL_API = "../../api/knobs.php";</script>
+<script src="../../assets/js/api-client.js"></script>
+<script src="../../assets/js/create.js?v=18"></script>
+</body>
+</html>
