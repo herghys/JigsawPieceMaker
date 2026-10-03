@@ -1,7 +1,0 @@
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /JigsawPieceCreator/
-# Short routes: /editor/ and /creator/ are served by routes.php
-# from the files under pages/ (URL stays clean).
-RewriteRule ^(editor|creator)/?$ routes.php?page=$1 [L,QSA]
-</IfModule>

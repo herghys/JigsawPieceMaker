@@ -1,6 +1,0 @@
-# Vercel is API-only: deploy the serverless functions, nothing else.
-# (The frontend lives on GitHub Pages; local dev files stay in git.)
-*
-!api/
-!api/**
-!vercel.json
