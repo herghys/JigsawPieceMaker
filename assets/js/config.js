@@ -7,4 +7,4 @@
  * first, then falls back to the per-page window.JIGSAW_LOCAL_API (PHP),
  * then to built-in defaults.
  */
-window.JIGSAW_API_BASE = "https://jigsaw-piece-creator.vercel.app/api";
+window.JIGSAW_API_BASE = "https://jigsaw-maker-api.vercel.app/api";
