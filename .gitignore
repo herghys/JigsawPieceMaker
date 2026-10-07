@@ -1,16 +1,13 @@
 # Local XAMPP dev only: kept on disk, never pushed
-# (frontend uses the cloud API once deployed; PHP/MySQL stay local).
 local-api/
 db.sql
-routes.php
 .htaccess
 
 # Dependencies / deploy
 node_modules/
 .vercel/
 
-# Secrets (Supabase keys live in Vercel dashboard, never here)
-.env
+# Secrets (Supabase keys live in Vercel dashboard, never here).
 .env.local
 .env.*.local
 

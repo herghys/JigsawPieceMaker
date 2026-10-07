@@ -295,8 +295,6 @@
   }
 
   async function api(action, payload, isGet) {
-    // Shared chain: cloud, then local PHP (see api-client.js).
-    // Returns the full envelope {ok, data, pending?}.
     return window.JigsawAPI.call("knobs", action, isGet
       ? { query: payload && payload.id ? `&id=${payload.id}` : "" }
       : { method: "POST", body: payload || {} });
@@ -449,12 +447,8 @@
           description: state.cur.description, control_points: state.cur.points,
         });
       }
-      if (r.pending) {
-        alert(`Request sent for <b>${r.data.name}</b>. It goes live after approval.`, "success");
-      } else {
-        await refreshProfiles(r.data.id);
-        alert(`Saved <b>${r.data.name}</b> (${r.data.slug}). The create page picks it up immediately.`, "success");
-      }
+      await refreshProfiles(r.data.id);
+      alert(`Saved <b>${r.data.name}</b> (${r.data.slug}). The create page picks it up immediately.`, "success");
     } catch (e) {
       alert(e.message, "danger");
     }
@@ -465,9 +459,9 @@
     if (state.cur.id === null || state.cur.isBuiltin) return;
     if (!window.confirm(`Delete profile "${state.cur.name}"? This cannot be undone.`)) return;
     try {
-      const r = await api("delete", { id: state.cur.id });
+      await api("delete", { id: state.cur.id });
       await refreshProfiles();
-      alert(r.pending ? "Delete requested. It applies after approval." : "Profile deleted.", "success");
+      alert("Profile deleted.", "success");
     } catch (e) {
       alert(e.message, "danger");
     }

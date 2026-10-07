@@ -1,0 +1,9 @@
+{
+  "name": "jigsaw-piece-creator-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static frontend for Jigsaw Piece Creator (deploys to Vercel).",
+  "scripts": {
+    "build": "node build-config.js"
+  }
+}

@@ -511,6 +511,8 @@
 
   function buildKnobPicker() {
     els.knobList.innerHTML = "";
+    els.knobList.removeAttribute("aria-busy");
+    els.knobList.removeAttribute("aria-label");
     const mkItem = (id, name, cpOrNull, sub, color) => {
       const b = document.createElement("button");
       b.type = "button";
@@ -636,12 +638,6 @@
           control_points: state.overrides[t.id],
         },
       });
-      if (json.pending) {
-        // Request queued, keep working on the tune, it appears after approval.
-        els.tuneMsg.textContent = `Request sent for "${json.data.name}". It appears in the picker after approval.`;
-        els.tuneSaveBtn.disabled = false;
-        return;
-      }
       delete state.overrides[t.id];
       els.tuneName.value = "";
       await loadTemplates();
@@ -698,7 +694,7 @@
   }
 
   async function loadTemplates() {
-    // Cloud first, local PHP second, built-in defaults last (see api-client.js).
+    // Supabase first, local PHP second, built-in defaults last.
     try {
       const json = await window.JigsawAPI.call("knobs", "list");
       if (!json.data || !json.data.length) throw new Error("empty catalog");
@@ -708,7 +704,7 @@
         controlPoints: r.controlPoints,
       }));
       state.dbUp = true;
-      const where = window.JigsawAPI.usedBase === "cloud" ? "synced" : "local connected";
+      const where = window.JigsawAPI.usedBase === "supabase" ? "supabase connected" : "local connected";
       els.knobSource.textContent = `Catalog: ${where} (${state.templates.length} profiles).`;
     } catch (err) {
       const res = await fetch("../assets/json/knobs.json");
@@ -768,6 +764,7 @@
     } catch (err) {
       els.knobList.innerHTML =
         `<span class="list-group-item">Could not load knob profiles (${err.message}). Serve this folder over http (e.g. XAMPP) instead of file://.</span>`;
+      els.knobList.removeAttribute("aria-busy");
       return;
     }
     buildKnobPicker();

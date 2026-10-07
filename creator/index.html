@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create puzzle | Jigsaw Piece Creator</title>
 <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
-<link rel="stylesheet" href="../assets/styles/styles.css?v=21">
+<link rel="stylesheet" href="../assets/styles/styles.css?v=22">
 </head>
 <body>
 
@@ -52,7 +52,13 @@
 
       <div class="panel panel-default">
         <div class="panel-heading"><h2 class="panel-title">Knob profile</h2></div>
-        <div id="knobList" class="list-group"><span class="list-group-item">Loading profiles...</span></div>
+        <div id="knobList" class="list-group" aria-busy="true" aria-label="Loading knob profiles">
+          <div class="list-group-item mix-row"><div class="skel" style="width:120px;height:51px;flex:0 0 120px"></div><div class="skel" style="height:14px;flex:1"></div></div>
+          <div class="list-group-item profile-card"><div class="skel" style="width:100%;aspect-ratio:300/128"></div><div class="skel" style="height:12px;width:70%"></div></div>
+          <div class="list-group-item profile-card"><div class="skel" style="width:100%;aspect-ratio:300/128"></div><div class="skel" style="height:12px;width:70%"></div></div>
+          <div class="list-group-item profile-card"><div class="skel" style="width:100%;aspect-ratio:300/128"></div><div class="skel" style="height:12px;width:70%"></div></div>
+          <div class="list-group-item profile-card"><div class="skel" style="width:100%;aspect-ratio:300/128"></div><div class="skel" style="height:12px;width:70%"></div></div>
+        </div>
         <div class="panel-body"><p id="knobSource" class="help-block"></p></div>
       </div>
 
@@ -170,9 +176,9 @@
 
 </div>
 
-<script src="../assets/js/config.js"></script>
+<script src="../assets/js/config.js?v=5"></script>
 <script>window.JIGSAW_LOCAL_API = "../local-api/knobs.php";</script>
-<script src="../assets/js/api-client.js"></script>
-<script src="../assets/js/create.js?v=18"></script>
+<script src="../assets/js/api-client.js?v=3"></script>
+<script src="../assets/js/create.js?v=20"></script>
 </body>
 </html>

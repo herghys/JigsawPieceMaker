@@ -1,0 +1,8 @@
+# Never upload the local PHP/MySQL dev backend or secrets to Vercel.
+# (local-api/ is also gitignored, so git deploys skip it anyway; this covers CLI deploys.)
+local-api/
+db.sql
+.htaccess
+.env
+.env.local
+.env.*.local

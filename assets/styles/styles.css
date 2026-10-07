@@ -233,6 +233,20 @@ label { font-weight: 700; display: block; margin-bottom: 2px; }
 .alert-success { color: #3c763d; background: #dff0d8; border-color: #d6e9c6; }
 .alert-danger { color: #a94442; background: #f2dede; border-color: #ebccd1; }
 
+/* ---------- skeleton loading ---------- */
+.skel {
+  border-radius: 4px;
+  background: linear-gradient(90deg, #eee 25%, #e0e0e0 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: skel-shimmer 1.2s ease infinite;
+}
+@keyframes skel-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
 /* ---------- previews ---------- */
 .preview-canvas { width: 100%; display: block; background: #fafafa; border: 1px solid #eee; }
 .canvas-board { width: 100%; display: block; background: #fff; border: 1px solid #ddd; touch-action: none; cursor: crosshair; }
