@@ -8,6 +8,9 @@ node_modules/
 .vercel/
 
 # Secrets (Supabase keys live in Vercel dashboard, never here).
+.env
+.env.*
+.env.prod
 .env.local
 .env.*.local
 

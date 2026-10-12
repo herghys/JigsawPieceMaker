@@ -12,7 +12,11 @@
 <nav class="navbar navbar-inverse">
   <div class="container">
     <span class="navbar-brand">Jigsaw Piece Creator</span>
-    <span class="navbar-text">PNG cut sheet | runs in your browser</span> <a class="navbar-bmc" href="https://buymeacoffee.com/herghys" target="_blank" rel="noopener"><img src="assets/images/bmc-button.png" alt="Buy me a coffee"></a>
+    <span class="navbar-text">PNG cut sheet | runs in your browser</span>
+    <div class="navbar-actions">
+      <a class="navbar-pieceit-btn" href="../PieceItWeb/">Piece It Web &rarr;</a>
+      <a class="navbar-bmc" href="https://buymeacoffee.com/herghys" target="_blank" rel="noopener"><img src="assets/images/bmc-button.png" alt="Buy me a coffee"></a>
+    </div>
   </div>
 </nav>
 
@@ -32,11 +36,24 @@
       <li><b>Create puzzle:</b> upload an image, pick a knob profile, set the tiling, download a spaced PNG cut sheet.</li>
       <li><b>Edge editor:</b> design custom knob profiles in the browser. Needs a connection; it stays greyed out while unreachable (the create page then falls back to the default presets).</li>
     </ol>
+
+    <div class="pieceit-bridge-box">
+      <div class="bridge-left">
+        <span class="bridge-tag">PIECE IT ECOSYSTEM</span>
+        <h4 class="bridge-title">Connected to Piece It Web</h4>
+        <p class="bridge-text">
+          Jigsaw Piece Creator shares its live catalog and parametric knob curves with the Piece It puzzle engine.
+        </p>
+      </div>
+      <div class="bridge-right">
+        <a href="../PieceItWeb/" class="btn btn-primary">Open Piece It Web &rarr;</a>
+      </div>
+    </div>
   </div>
 
   <hr>
   <footer>
-    <p>&copy; 2026 - Jigsaw Piece Creator</p>
+    <p>&copy; 2026 - Jigsaw Piece Creator by Herghys | <a href="../PieceItWeb/">Piece It Web</a></p>
   </footer>
 
 </div>
@@ -45,7 +62,6 @@
 <script>window.JIGSAW_LOCAL_API = "local-api/knobs.php";</script>
 <script src="assets/js/api-client.js?v=3"></script>
 <script>
-// Gate the editor on DB connectivity: enabled only when the API reports db:true.
 (function () {
   var btn = document.getElementById("editorBtn");
   var note = document.getElementById("editorNote");
@@ -60,7 +76,9 @@
       if (j && j.db) {
         btn.classList.remove("disabled");
         btn.setAttribute("aria-disabled", "false");
-        note.textContent = "Connected. Edge editor is available.";
+        var used = window.JigsawAPI.call.usedBase || "";
+        var src = used === "pieceit" ? "Piece It Web" : (used === "supabase" ? "Supabase" : (used === "cloud" ? "Cloud API" : "Local API"));
+        note.textContent = "Connected (" + src + "). Edge editor is available.";
       } else {
         greyed("Unreachable. Edge editor is greyed out. Create puzzle still works (default presets).");
       }

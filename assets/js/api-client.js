@@ -5,7 +5,7 @@ window.JigsawAPI = (function () {
     if (e === "development" || e === "dev" || e === "local") return false;
     try {
       const h = window.location.hostname || "";
-      if (h === "" || h === "localhost" || h === "127.0.0.1" || h === "[::1]") return false;
+      if (h === "" || h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h === "herghys.dev" || h.endsWith(".local") || h.endsWith(".dev")) return false;
     } catch (_) {}
     return true;
   }
@@ -183,8 +183,44 @@ window.JigsawAPI = (function () {
     return json;
   }
 
+  function getPieceItBase() {
+    if (typeof window !== "undefined" && window.PIECEIT_API_BASE) return window.PIECEIT_API_BASE;
+    if (typeof window !== "undefined" && window.location) {
+      const h = window.location.hostname || "";
+      if (h === "herghys.dev") return "https://herghys.dev/PieceItWeb/api";
+      const p = window.location.pathname || "";
+      if (p.includes("/creator/") || p.includes("/editor/")) return "../../PieceItWeb/api";
+      return "../PieceItWeb/api";
+    }
+    return "/PieceItWeb/api";
+  }
+
+  async function pieceitCall(base, route, action, opts) {
+    const { method = "GET", body = null, query = "" } = opts || {};
+    let url = "";
+    if (route === "status") {
+      url = `${base}/status`;
+    } else {
+      url = `${base}/knobs?action=${action}${query || ""}`;
+    }
+    const res = await fetch(
+      url,
+      method === "GET"
+        ? { cache: "no-store" }
+        : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) throw new Error((json && (json.error || json.message)) || ("HTTP " + res.status));
+    if (route === "status") {
+      return { ok: true, db: !!(json.healthy || json.db || json.ok) };
+    }
+    return json;
+  }
+
   function backends() {
     const out = [];
+    const pBase = getPieceItBase();
+    if (pBase) out.push({ name: "pieceit", base: pBase.replace(/\/$/, "") });
     if (supa()) out.push({ name: "supabase" });
     const cloud = window.JIGSAW_API_BASE || "";
     if (cloud) out.push({ name: "cloud", base: cloud.replace(/\/$/, "") });
@@ -197,11 +233,13 @@ window.JigsawAPI = (function () {
     const list = backends();
     for (let i = 0; i < list.length; i++) {
       try {
-        const json = list[i].name === "supabase"
-          ? await supabaseCall(action, opts)
-          : list[i].name === "cloud"
-            ? await legacyCall(list[i].base, route, action, opts)
-            : await localCall(list[i].base, action, opts);
+        const json = list[i].name === "pieceit"
+          ? await pieceitCall(list[i].base, route, action, opts)
+          : list[i].name === "supabase"
+            ? await supabaseCall(action, opts)
+            : list[i].name === "cloud"
+              ? await legacyCall(list[i].base, route, action, opts)
+              : await localCall(list[i].base, action, opts);
         call.usedBase = list[i].name;
         return json;
       } catch (e) {

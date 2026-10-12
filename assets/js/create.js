@@ -434,7 +434,7 @@
     const X = (t) => padX + t * (W - padX * 2);
     const Y = (v) => baseY - v * (baseY - topPad); // template space, y 0..1 fills the box
     // baseline
-    ctx.strokeStyle = "#333333";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(W, baseY); ctx.stroke();
     // filled shape
@@ -443,15 +443,15 @@
     for (const [tx, ty] of curve) ctx.lineTo(X(tx), Y(ty));
     ctx.lineTo(X(1), baseY);
     ctx.closePath();
-    ctx.fillStyle = color || "#337ab7";
+    ctx.fillStyle = color || "#38bdf8";
     ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#333333";
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
     ctx.lineJoin = "round";
     ctx.stroke();
   }
 
-  const KNOB_COLORS = ["#337ab7", "#5cb85c", "#f0ad4e", "#d9534f", "#8066cc"];
+  const KNOB_COLORS = ["#38bdf8", "#10b981", "#f59e0b", "#f43f5e", "#a855f7"];
 
   // Tune preview uses the EXACT same mapping as the picker thumbnails
   // (same box aspect 300:128, same paddings) so a profile looks identical
@@ -469,19 +469,18 @@
     cv.width = w * dpr; cv.height = h * dpr;
     const ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#090a0f";
     ctx.fillRect(0, 0, w, h);
     const padX = (w * 10) / TUNE_W0, baseY = h - (h * 8) / TUNE_H0, topPad = (h * 6) / TUNE_H0;
     const X = (tx) => padX + tx * (w - padX * 2);
     const Y = (v) => baseY - v * (baseY - topPad); // template space, y 0..1, same as picker
     // baseline
-    ctx.strokeStyle = "#333333";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
     ctx.lineWidth = Math.max(1.5, w / 150);
     ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(w, baseY); ctx.stroke();
-    // smoothed curve (no clamping: the overshoot below the baseline is real,
-    // the cutter and the picker show it too)
+    // smoothed curve
     const curve = sampleTemplateCurve(pts, 90);
-    ctx.strokeStyle = "#06b6d4";
+    ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = Math.max(2, w / 100);
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -493,19 +492,19 @@
     // control points with index labels
     const dotR = Math.max(3.5, w / 65);
     ctx.textAlign = "center";
-    ctx.font = `${Math.max(10, Math.round(w / 26))}px Helvetica, Arial, sans-serif`;
+    ctx.font = `${Math.max(10, Math.round(w / 26))}px 'JetBrains Mono', monospace`;
     pts.forEach(([x, y], i) => {
       const locked = i === 0 || i === pts.length - 1;
       const px = X(x), py = Y(y);
       ctx.beginPath();
       ctx.arc(px, py, locked ? dotR + 1 : dotR, 0, 7);
-      ctx.fillStyle = locked ? "#d9534f" : "#eab308";
+      ctx.fillStyle = locked ? "#ef4444" : "#f59e0b";
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "#333333";
+      ctx.strokeStyle = "#ffffff";
       ctx.stroke();
-      ctx.fillStyle = "#333333";
-      ctx.fillText(locked ? `[${i}] anchor` : `[${i}]`, px, py - dotR - 7);
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillText(locked ? `[${i}] lock` : `[${i}]`, px, py - dotR - 7);
     });
   }
 

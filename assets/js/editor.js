@@ -94,9 +94,9 @@
     const cp = state.cur.points;
     ctx.clearRect(0, 0, els.curve.width, els.curve.height);
     // grid
-    ctx.strokeStyle = "#e5e5e5";
-    ctx.fillStyle = "#777";
-    ctx.font = "12px Helvetica, Arial, sans-serif";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillStyle = "#64748b";
+    ctx.font = "11px 'JetBrains Mono', monospace";
     ctx.lineWidth = 1;
     for (let g = 0; g <= 6; g++) {
       const yv = (YMAX / 6) * g;
@@ -111,14 +111,14 @@
     }
     // baseline
     const [, by] = toPx([0, 0]);
-    ctx.strokeStyle = "#333";
+    ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(PAD.l, by); ctx.lineTo(PAD.l + plotW(), by); ctx.stroke();
     if (cp.length >= 2) {
       // smooth curve
       const curve = sampleCurve(cp, 90);
-      ctx.strokeStyle = "#337ab7";
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 3.5;
       ctx.lineJoin = "round";
       ctx.beginPath();
       curve.forEach(([x, y], i) => {
@@ -132,12 +132,13 @@
         const locked = i === 0 || i === cp.length - 1;
         ctx.beginPath();
         ctx.arc(px, py, i === state.sel ? 9 : 7, 0, 7);
-        ctx.fillStyle = locked ? "#d9534f" : i === state.sel ? "#f0ad4e" : "#337ab7";
+        ctx.fillStyle = locked ? "#ef4444" : i === state.sel ? "#fbbf24" : "#38bdf8";
         ctx.fill();
         ctx.lineWidth = 2;
-        ctx.strokeStyle = "#fff";
+        ctx.strokeStyle = "#ffffff";
         ctx.stroke();
-        ctx.fillStyle = "#333";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.font = "11px 'JetBrains Mono', monospace";
         ctx.fillText("[" + i + "]", px + 10, py - 8);
       });
     }
@@ -149,8 +150,8 @@
     const cp = state.cur.points;
     ctx.clearRect(0, 0, cv.width, cv.height);
     if (cp.length < 3) {
-      ctx.fillStyle = "#777";
-      ctx.font = "14px Helvetica, Arial, sans-serif";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "14px 'Plus Jakarta Sans', sans-serif";
       ctx.fillText("Need at least 3 points for a preview.", 40, 170);
       return;
     }
@@ -166,10 +167,10 @@
       if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
     });
     ctx.closePath();
-    ctx.fillStyle = "rgba(51,122,183,0.25)";
+    ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
     ctx.fill();
     ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#222";
+    ctx.strokeStyle = "#38bdf8";
     ctx.stroke();
   }
 
