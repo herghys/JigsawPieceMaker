@@ -111,7 +111,7 @@
     return state.templates[(rng() * state.templates.length) | 0];
   }
 
-  function generateBoard(seed, rows, cols, cellW, cellH) {
+  function generateBoard(seed, rows, cols, S) {
     const rng = mulberry32(seed);
     const pieces = [];
     const at = (x, y) => pieces[y * cols + x];
@@ -146,45 +146,35 @@
     }
     const res = adaptiveResolution(pieces.length);
     const tabSizeRatio = parseFloat(els.tabSize.value) || 0.2;
-    for (const p of pieces) p.outline = buildOutline(p, tabSizeRatio, res, cellW, cellH);
-    return { rows, cols, seed, pieces, cellW, cellH, boardW: cols * cellW, boardH: rows * cellH };
+    for (const p of pieces) p.outline = buildOutline(p, tabSizeRatio, res, S);
+    return { rows, cols, seed, pieces, S, cellW: S, cellH: S, boardW: cols * S, boardH: rows * S };
   }
 
-  // Outline in cell-pixel space, Y-up: (0,H)=top-left ... (0,0)=bottom-left.
-  // Tab depth and width scale from refLen = min(cellW, cellH) so tabs have
-  // the exact same proportional size and profile on every edge, even if cells are non-square.
-  function buildOutline(piece, tabSizeRatio, resolution, cellW, cellH) {
+  // Outline in cell-pixel space, Y-up: (0,S)=top-left ... (0,0)=bottom-left.
+  // Pieces are strictly 1:1 square. Knob depth and width are uniform on every edge.
+  function buildOutline(piece, tabSizeRatio, resolution, S) {
     const pts = [];
-    const refLen = Math.min(cellW, cellH);
-    appendEdge(pts, [0, cellH], [cellW, cellH], piece.top, tabSizeRatio, resolution, refLen);
-    appendEdge(pts, [cellW, cellH], [cellW, 0], piece.right, tabSizeRatio, resolution, refLen);
-    appendEdge(pts, [cellW, 0], [0, 0], piece.bottom, tabSizeRatio, resolution, refLen);
-    appendEdge(pts, [0, 0], [0, cellH], piece.left, tabSizeRatio, resolution, refLen);
+    appendEdge(pts, [0, S], [S, S], piece.top, tabSizeRatio, resolution, S);
+    appendEdge(pts, [S, S], [S, 0], piece.right, tabSizeRatio, resolution, S);
+    appendEdge(pts, [S, 0], [0, 0], piece.bottom, tabSizeRatio, resolution, S);
+    appendEdge(pts, [0, 0], [0, S], piece.left, tabSizeRatio, resolution, S);
     return pts;
   }
 
-  function appendEdge(pts, start, end, edge, tabSizeRatio, resolution, refLen) {
+  function appendEdge(pts, start, end, edge, tabSizeRatio, resolution, S) {
     if (edge.type === "flat" || !edge.tpl) { pts.push(start); return; }
     const dx = end[0] - start[0], dy = end[1] - start[1];
     const len = Math.hypot(dx, dy);
     const dir = [dx / len, dy / len];
     const normal = [-dir[1], dir[0]]; // outward from the piece
-    const effectiveRef = refLen || len;
-    const tabDepth = tabSizeRatio * effectiveRef;
+    const tabDepth = tabSizeRatio * S;
     const direction = edge.type === "tab" ? 1 : -1;
-    const k = Math.min(1, effectiveRef / len);
     // Runtime tune overrides the stored points for this template id (unsaved).
     const src = state.overrides[edge.tpl.id] || edge.tpl.controlPoints;
-    const cp = src.map(([tx, ty], idx) => {
-      // Anchors at the start and end of the edge stay fixed at 0 and 1;
-      // knob interior scales uniformly around 0.5 so tabs maintain proportional width across edges.
-      const isEndpoint = idx === 0 || idx === src.length - 1;
-      const effectiveTx = isEndpoint ? tx : (0.5 + (tx - 0.5) * k);
-      return [
-        start[0] + (end[0] - start[0]) * effectiveTx + normal[0] * ty * tabDepth * direction,
-        start[1] + (end[1] - start[1]) * effectiveTx + normal[1] * ty * tabDepth * direction,
-      ];
-    });
+    const cp = src.map(([tx, ty]) => [
+      start[0] + dx * tx + normal[0] * ty * tabDepth * direction,
+      start[1] + dy * tx + normal[1] * ty * tabDepth * direction,
+    ]);
     for (let i = 0; i < cp.length - 1; i++) {
       for (let s = 0; s < resolution; s++) {
         pts.push(catmullRomPoint(cp, i, s / resolution));
@@ -192,9 +182,40 @@
     }
   }
 
-  // ---------- image handling (always native ratio; whole image, no crop) ----------
+  // ---------- image handling & Unity-matching center crop ----------
   function srcW() { return state.img ? (state.img.naturalWidth || state.img.width) : 0; }
   function srcH() { return state.img ? (state.img.naturalHeight || state.img.height) : 0; }
+
+  // Center-crops the image to match the board aspect ratio (cols / rows),
+  // keeping the image completely un-distorted (matches Unity jigsaw crop).
+  function imageCrop(cols, rows) {
+    if (!state.img) return { sx: 0, sy: 0, sw: 0, sh: 0, isCropped: false };
+    const iw = srcW(), ih = srcH();
+    if (!iw || !ih) return { sx: 0, sy: 0, sw: 0, sh: 0, isCropped: false };
+    const boardAspect = cols / rows;
+    const imgAspect = iw / ih;
+    let sx = 0, sy = 0, sw = iw, sh = ih;
+    if (Math.abs(imgAspect - boardAspect) > 0.002) {
+      if (imgAspect > boardAspect) {
+        sw = Math.round(ih * boardAspect);
+        sh = ih;
+        sx = Math.round((iw - sw) / 2);
+        sy = 0;
+      } else {
+        sw = iw;
+        sh = Math.round(iw / boardAspect);
+        sx = 0;
+        sy = Math.round((ih - sh) / 2);
+      }
+      return { sx, sy, sw, sh, isCropped: true };
+    }
+    return { sx: 0, sy: 0, sw: iw, sh: ih, isCropped: false };
+  }
+
+  function drawCropped(ctx, cols, rows, dx, dy, dw, dh) {
+    const { sx, sy, sw, sh } = imageCrop(cols, rows);
+    ctx.drawImage(state.img, sx, sy, sw, sh, dx, dy, dw, dh);
+  }
 
   function drawFull(ctx, dx, dy, dw, dh) {
     ctx.drawImage(state.img, 0, 0, srcW(), srcH(), dx, dy, dw, dh);
@@ -271,22 +292,22 @@
     regenerate();
   }
 
-  // ---------- preview: assembled board with cut lines (native ratio) ----------
+  // ---------- preview: assembled board with cut lines ----------
   function renderPreview() {
     const cv = els.preview;
     if (!state.img || !state.board) { cv.width = 0; cv.height = 0; return; }
-    const { pieces, cellW, cellH, boardW, boardH } = state.board;
+    const { pieces, S, boardW, boardH, cols, rows } = state.board;
     const W = 1100;
-    const H = Math.round((W * boardH) / boardW);
+    const H = Math.round((W * rows) / cols);
     cv.width = W; cv.height = H;
     const ctx = cv.getContext("2d");
-    drawFull(ctx, 0, 0, W, H);
-    const kx = W / boardW, ky = H / boardH; // uniform scale (same ratio)
+    drawCropped(ctx, cols, rows, 0, 0, W, H);
+    const kx = W / boardW, ky = H / boardH;
     ctx.lineWidth = Math.max(1.5, W / 500);
     for (const p of pieces) {
       ctx.beginPath();
       p.outline.forEach(([px, py], i) => {
-        const X = (p.cx * cellW + px) * kx, Y = (p.cy * cellH + (cellH - py)) * ky;
+        const X = (p.cx * S + px) * kx, Y = (p.cy * S + (S - py)) * ky;
         if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
       });
       ctx.closePath();
@@ -301,18 +322,17 @@
 
   // ---------- print sheet: spaced individual pieces, then paper composition ----------
   function sheetParams(S, gap) {
-    const { rows, cols, pieces, cellW, cellH } = state.board;
+    const { rows, cols, pieces } = state.board;
     const used = state.knobMode === "mix" ? state.templates
       : state.templates.filter((t) => t.id === state.knobMode);
     const eff = (t) => state.overrides[t.id] || t.controlPoints;
     const maxY = Math.max(0.2, ...used.flatMap((t) => eff(t).map((p) => p[1])));
     const tabSizeRatio = parseFloat(els.tabSize.value) || 0.2;
-    const refLen = Math.min(cellW, cellH);
-    // per-axis bleed: knob depth uses uniform refLen, so overhang is consistent across edges
-    const pad = Math.ceil(tabSizeRatio * refLen * maxY) + 3;
+    // Every piece is 1:1 square: uniform bleed padding on all edges
+    const pad = Math.ceil(tabSizeRatio * S * maxY) + 3;
     const padX = pad;
     const padY = pad;
-    const strideX = cellW + padX * 2, strideY = cellH + padY * 2;
+    const strideX = S + padX * 2, strideY = S + padY * 2;
     const LW = gap * 2 + cols * strideX + (cols - 1) * gap;
     const LH = gap * 2 + rows * strideY + (rows - 1) * gap;
     return { rows, cols, pieces, padX, padY, strideX, strideY, LW: Math.round(LW), LH: Math.round(LH), S, gap };
@@ -321,8 +341,11 @@
   // Draw the spaced-pieces block. White only when asked (no-paper mode);
   // on paper the block stays transparent and the paper provides the white.
   function renderLayout(ctx, sp, white) {
-    const { rows, cols, pieces, padX, padY, strideX, strideY, gap } = sp;
-    const { cellW, cellH, boardW, boardH } = state.board;
+    const { rows, cols, pieces, padX, padY, strideX, strideY, gap, S } = sp;
+    const { boardW, boardH } = state.board;
+    const { sx, sy, sw, sh } = imageCrop(cols, rows);
+    const scale = boardW / sw;
+
     if (white) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, sp.LW, sp.LH); }
     else ctx.clearRect(0, 0, sp.LW, sp.LH);
     for (const p of pieces) {
@@ -331,20 +354,24 @@
       ctx.save();
       ctx.beginPath();
       p.outline.forEach(([px, py], i) => {
-        const X = ox + padX + px, Y = oy + padY + (cellH - py);
+        const X = ox + padX + px, Y = oy + padY + (S - py);
         if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
       });
       ctx.closePath();
       ctx.clip();
       // Draw the source so the piece's base rect lands exactly on its cell;
       // knob overhang then samples neighbour pixels, like textured-mesh UVs.
+      const boardCanvasX = ox + padX - p.cx * S;
+      const boardCanvasY = oy + padY - p.cy * S;
+      const imgCanvasX = boardCanvasX - sx * scale;
+      const imgCanvasY = boardCanvasY - sy * scale;
       ctx.drawImage(state.img, 0, 0, srcW(), srcH(),
-        ox + padX - p.cx * cellW, oy + padY - p.cy * cellH, boardW, boardH);
+        imgCanvasX, imgCanvasY, srcW() * scale, srcH() * scale);
       ctx.restore();
       if (els.cutLines.checked) {
         ctx.beginPath();
         p.outline.forEach(([px, py], i) => {
-          const X = ox + padX + px, Y = oy + padY + (cellH - py);
+          const X = ox + padX + px, Y = oy + padY + (S - py);
           if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
         });
         ctx.closePath();
@@ -454,10 +481,10 @@
 
   function exportAssembled() {
     if (!state.img || !state.board) return;
-    const { boardW, boardH } = state.board;
+    const { boardW, boardH, cols, rows } = state.board;
     const off = document.createElement("canvas");
     off.width = Math.round(boardW); off.height = Math.round(boardH);
-    drawFull(off.getContext("2d"), 0, 0, off.width, off.height);
+    drawCropped(off.getContext("2d"), cols, rows, 0, 0, off.width, off.height);
     download(off, baseName() + "-assembled.png");
   }
 
@@ -693,11 +720,8 @@
 
   // ---------- main ----------
   function cellDims(cols, rows, S) {
-    // Board keeps the image's actual ratio: columns are S px wide,
-    // total height follows the image, rows split it (cells may be non-square).
-    if (!state.img) return { cellW: S, cellH: S };
-    const boardW = cols * S;
-    return { cellW: S, cellH: (boardW * srcH()) / srcW() / rows };
+    // Pieces are strictly 1:1 square. Board dimensions are cols*S by rows*S.
+    return { cellW: S, cellH: S };
   }
 
   function regenerate() {
@@ -707,19 +731,19 @@
     const seed = parseInt(els.seed.value) || 0;
     const S = parseInt(els.piecePx.value) || 300;
     els.tabSizeVal.textContent = (parseFloat(els.tabSize.value) || 0.2).toFixed(2);
-    const { cellW, cellH } = cellDims(cols, rows, S);
-    state.board = generateBoard(seed >>> 0, rows, cols, cellW, cellH);
+    state.board = generateBoard(seed >>> 0, rows, cols, S);
     const hasPaper = !!PAPER_MM[els.paperSize.value];
     els.printDpi.disabled = !hasPaper;
     els.edgeMargin.disabled = !hasPaper;
     els.paperFit.disabled = !hasPaper;
     if (state.img) {
-      const ratio = cellW / cellH;
-      const isSquare = ratio >= 0.92 && ratio <= 1.08;
-      const ratioLabel = isSquare ? "Square (1:1)" : `${ratio.toFixed(2)}:1 ${ratio > 1 ? "wide" : "tall"}`;
+      const { sx, sy, sw, sh, isCropped } = imageCrop(cols, rows);
+      const cropText = isCropped
+        ? ` &bull; Cropped ${sw}x${sh}px (${cols}:${rows})`
+        : ` &bull; Full image (${cols}:${rows})`;
       els.imgInfo.innerHTML =
-        `${state.imgName} ${srcW()}x${srcH()}px actual size. Board ${cols}x${rows} ` +
-        `(${state.board.pieces.length} pieces, cell ${Math.round(cellW)}x${Math.round(cellH)}px &bull; <span class="${isSquare ? 'badge-square' : 'badge-rect'}">${ratioLabel}</span>)`;
+        `<b>${state.imgName}</b> ${srcW()}x${srcH()}px actual size. Board ${cols}x${rows} ` +
+        `(${state.board.pieces.length} pieces, cell <b>${S}x${S}px</b> &bull; <span class="badge-square">1:1 Square</span>${cropText})`;
       renderPreview();
       renderSheetPreview();
       drawTuneThumb(); // depth slider changes the true-scale preview height
@@ -798,13 +822,10 @@
     if (els.lockAspect) {
       els.lockAspect.addEventListener("change", () => {
         if (els.lockAspect.checked && state.img) {
-          const aspect = srcW() / srcH();
-          const target = parseInt(els.targetPieces?.value) || ((parseInt(els.cols.value) || 8) * (parseInt(els.rows.value) || 5)) || 64;
-          const grid = calculateProportionalGrid(target, aspect);
-          els.cols.value = grid.cols;
-          els.rows.value = grid.rows;
+          applyTargetGrid();
+        } else {
+          regenerate();
         }
-        regenerate();
       });
     }
 
