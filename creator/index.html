@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create puzzle | Jigsaw Piece Creator</title>
 <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
-<link rel="stylesheet" href="../assets/styles/styles.css?v=22">
+<link rel="stylesheet" href="../assets/styles/styles.css?v=23">
 </head>
 <body>
 
@@ -111,13 +111,22 @@
       <div class="panel panel-default">
         <div class="panel-heading"><h2 class="panel-title">Tiling</h2></div>
         <div class="panel-body">
+          <div class="checkbox-row" style="margin:0 0 10px 0">
+            <label class="checkbox-inline" title="Automatically adjust rows/columns to keep pieces square and proportional">
+              <input type="checkbox" id="lockAspect" checked> Keep pieces square (proportional)
+            </label>
+          </div>
           <div class="form-row">
-            <label>Columns (X)<input type="number" id="cols" class="form-control" value="4" min="1" max="20"></label>
-            <label>Rows (Y)<input type="number" id="rows" class="form-control" value="3" min="1" max="20"></label>
+            <label>Columns (X)<input type="number" id="cols" class="form-control" value="8" min="1" max="30"></label>
+            <label>Rows (Y)<input type="number" id="rows" class="form-control" value="5" min="1" max="30"></label>
+          </div>
+          <div class="form-row">
+            <label>Target pieces<input type="number" id="targetPieces" class="form-control" placeholder="e.g. 64" min="4" max="400" value="64"></label>
+            <label>&nbsp;<button id="calcGridBtn" type="button" class="btn btn-default" style="width:100%" title="Auto-calculate grid for square pieces">Auto grid</button></label>
           </div>
           <div class="form-row">
             <label>Seed<input type="number" id="seed" class="form-control" value="12345"></label>
-            <label>&nbsp;<button id="shuffleBtn" type="button" class="btn btn-default">Randomize</button></label>
+            <label>&nbsp;<button id="shuffleBtn" type="button" class="btn btn-default" style="width:100%">Randomize</button></label>
           </div>
           <label>Knob depth
             <span class="slider-row"><input type="range" id="tabSize" min="0.1" max="0.4" step="0.01" value="0.2"><output id="tabSizeVal">0.20</output></span>
@@ -184,6 +193,6 @@
 <script src="../assets/js/config.js?v=5"></script>
 <script>window.JIGSAW_LOCAL_API = "../local-api/knobs.php";</script>
 <script src="../assets/js/api-client.js?v=3"></script>
-<script src="../assets/js/create.js?v=20"></script>
+<script src="../assets/js/create.js?v=21"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
     tuneResetBtn: $("tuneResetBtn"), tuneSaveBtn: $("tuneSaveBtn"), tuneMsg: $("tuneMsg"),
     cols: $("cols"), rows: $("rows"), seed: $("seed"),
     shuffleBtn: $("shuffleBtn"), tabSize: $("tabSize"), tabSizeVal: $("tabSizeVal"),
+    lockAspect: $("lockAspect"), targetPieces: $("targetPieces"), calcGridBtn: $("calcGridBtn"),
     piecePx: $("piecePx"), gapPx: $("gapPx"), bgWhite: $("bgWhite"),
     cutLines: $("cutLines"), sheetInfo: $("sheetInfo"),
     paperSize: $("paperSize"), printDpi: $("printDpi"),
@@ -83,9 +84,20 @@
     return out;
   }
 
+  // ---------- grid and piece proportionality ----------
+  // Compute rows/cols that multiply to approximately targetPieceCount and preserve
+  // aspect ratio so cells stay square (matching Piece-It engine).
+  function calculateProportionalGrid(targetPieceCount, aspect) {
+    const target = Math.max(1, targetPieceCount || 64);
+    const asp = aspect > 0 ? aspect : 1;
+    let cols = Math.round(Math.sqrt(target * asp));
+    let rows = Math.round(target / Math.max(cols, 1));
+    cols = Math.max(1, Math.min(30, cols));
+    rows = Math.max(1, Math.min(30, rows));
+    return { cols, rows };
+  }
+
   // ---------- board generation (seeded, deterministic) ----------
-  // Outlines are built in cell-pixel space (Y-up), so tab depth uses the TRUE
-  // edge length even when cells are not square (native image ratio).
   function adaptiveResolution(total) {
     if (total >= 400) return 4;
     if (total >= 100) return 6;
@@ -139,29 +151,40 @@
   }
 
   // Outline in cell-pixel space, Y-up: (0,H)=top-left ... (0,0)=bottom-left.
+  // Tab depth and width scale from refLen = min(cellW, cellH) so tabs have
+  // the exact same proportional size and profile on every edge, even if cells are non-square.
   function buildOutline(piece, tabSizeRatio, resolution, cellW, cellH) {
     const pts = [];
-    appendEdge(pts, [0, cellH], [cellW, cellH], piece.top, tabSizeRatio, resolution);
-    appendEdge(pts, [cellW, cellH], [cellW, 0], piece.right, tabSizeRatio, resolution);
-    appendEdge(pts, [cellW, 0], [0, 0], piece.bottom, tabSizeRatio, resolution);
-    appendEdge(pts, [0, 0], [0, cellH], piece.left, tabSizeRatio, resolution);
+    const refLen = Math.min(cellW, cellH);
+    appendEdge(pts, [0, cellH], [cellW, cellH], piece.top, tabSizeRatio, resolution, refLen);
+    appendEdge(pts, [cellW, cellH], [cellW, 0], piece.right, tabSizeRatio, resolution, refLen);
+    appendEdge(pts, [cellW, 0], [0, 0], piece.bottom, tabSizeRatio, resolution, refLen);
+    appendEdge(pts, [0, 0], [0, cellH], piece.left, tabSizeRatio, resolution, refLen);
     return pts;
   }
 
-  function appendEdge(pts, start, end, edge, tabSizeRatio, resolution) {
+  function appendEdge(pts, start, end, edge, tabSizeRatio, resolution, refLen) {
     if (edge.type === "flat" || !edge.tpl) { pts.push(start); return; }
     const dx = end[0] - start[0], dy = end[1] - start[1];
     const len = Math.hypot(dx, dy);
     const dir = [dx / len, dy / len];
     const normal = [-dir[1], dir[0]]; // outward from the piece
-    const tabDepth = tabSizeRatio * len;
+    const effectiveRef = refLen || len;
+    const tabDepth = tabSizeRatio * effectiveRef;
     const direction = edge.type === "tab" ? 1 : -1;
+    const k = Math.min(1, effectiveRef / len);
     // Runtime tune overrides the stored points for this template id (unsaved).
     const src = state.overrides[edge.tpl.id] || edge.tpl.controlPoints;
-    const cp = src.map(([tx, ty]) => [
-      start[0] + (end[0] - start[0]) * tx + normal[0] * ty * tabDepth * direction,
-      start[1] + (end[1] - start[1]) * tx + normal[1] * ty * tabDepth * direction,
-    ]);
+    const cp = src.map(([tx, ty], idx) => {
+      // Anchors at the start and end of the edge stay fixed at 0 and 1;
+      // knob interior scales uniformly around 0.5 so tabs maintain proportional width across edges.
+      const isEndpoint = idx === 0 || idx === src.length - 1;
+      const effectiveTx = isEndpoint ? tx : (0.5 + (tx - 0.5) * k);
+      return [
+        start[0] + (end[0] - start[0]) * effectiveTx + normal[0] * ty * tabDepth * direction,
+        start[1] + (end[1] - start[1]) * effectiveTx + normal[1] * ty * tabDepth * direction,
+      ];
+    });
     for (let i = 0; i < cp.length - 1; i++) {
       for (let s = 0; s < resolution; s++) {
         pts.push(catmullRomPoint(cp, i, s / resolution));
@@ -183,7 +206,15 @@
     const img = new Image();
     img.onload = () => {
       state.img = img; state.imgName = file.name.replace(/\.[^.]+$/, "");
-      showThumb(url); regenerate();
+      showThumb(url);
+      if (els.lockAspect && els.lockAspect.checked) {
+        const aspect = (img.naturalWidth || img.width) / (img.naturalHeight || img.height);
+        const target = parseInt(els.targetPieces && els.targetPieces.value) || 64;
+        const grid = calculateProportionalGrid(target, aspect);
+        els.cols.value = grid.cols;
+        els.rows.value = grid.rows;
+      }
+      regenerate();
     };
     img.src = url;
   }
@@ -230,6 +261,13 @@
     const im = document.createElement("img");
     im.src = c.toDataURL(); im.alt = "sample image";
     els.dropzone.appendChild(im);
+    if (els.lockAspect && els.lockAspect.checked) {
+      const aspect = 1200 / 900;
+      const target = parseInt(els.targetPieces && els.targetPieces.value) || 64;
+      const grid = calculateProportionalGrid(target, aspect);
+      els.cols.value = grid.cols;
+      els.rows.value = grid.rows;
+    }
     regenerate();
   }
 
@@ -269,9 +307,11 @@
     const eff = (t) => state.overrides[t.id] || t.controlPoints;
     const maxY = Math.max(0.2, ...used.flatMap((t) => eff(t).map((p) => p[1])));
     const tabSizeRatio = parseFloat(els.tabSize.value) || 0.2;
-    // per-axis bleed: x-overhang comes from vertical edges (length cellH), and vice versa
-    const padX = Math.ceil(tabSizeRatio * cellH * maxY) + 3;
-    const padY = Math.ceil(tabSizeRatio * cellW * maxY) + 3;
+    const refLen = Math.min(cellW, cellH);
+    // per-axis bleed: knob depth uses uniform refLen, so overhang is consistent across edges
+    const pad = Math.ceil(tabSizeRatio * refLen * maxY) + 3;
+    const padX = pad;
+    const padY = pad;
     const strideX = cellW + padX * 2, strideY = cellH + padY * 2;
     const LW = gap * 2 + cols * strideX + (cols - 1) * gap;
     const LH = gap * 2 + rows * strideY + (rows - 1) * gap;
@@ -662,8 +702,8 @@
 
   function regenerate() {
     if (!state.templates.length) return;
-    const cols = Math.min(20, Math.max(1, parseInt(els.cols.value) || 4));
-    const rows = Math.min(20, Math.max(1, parseInt(els.rows.value) || 3));
+    const cols = Math.min(30, Math.max(1, parseInt(els.cols.value) || 4));
+    const rows = Math.min(30, Math.max(1, parseInt(els.rows.value) || 3));
     const seed = parseInt(els.seed.value) || 0;
     const S = parseInt(els.piecePx.value) || 300;
     els.tabSizeVal.textContent = (parseFloat(els.tabSize.value) || 0.2).toFixed(2);
@@ -674,9 +714,12 @@
     els.edgeMargin.disabled = !hasPaper;
     els.paperFit.disabled = !hasPaper;
     if (state.img) {
-      els.imgInfo.textContent =
+      const ratio = cellW / cellH;
+      const isSquare = ratio >= 0.92 && ratio <= 1.08;
+      const ratioLabel = isSquare ? "Square (1:1)" : `${ratio.toFixed(2)}:1 ${ratio > 1 ? "wide" : "tall"}`;
+      els.imgInfo.innerHTML =
         `${state.imgName} ${srcW()}x${srcH()}px actual size. Board ${cols}x${rows} ` +
-        `(${state.board.pieces.length} pieces, cell ${Math.round(cellW)}x${Math.round(cellH)}px)`;
+        `(${state.board.pieces.length} pieces, cell ${Math.round(cellW)}x${Math.round(cellH)}px &bull; <span class="${isSquare ? 'badge-square' : 'badge-rect'}">${ratioLabel}</span>)`;
       renderPreview();
       renderSheetPreview();
       drawTuneThumb(); // depth slider changes the true-scale preview height
@@ -717,7 +760,55 @@
 
   async function init() {
     const regenSoon = debounce(regenerate, 250);
-    ["cols", "rows", "seed", "tabSize", "piecePx", "gapPx", "edgeMargin"].forEach((id) => {
+
+    function applyTargetGrid() {
+      if (!state.img) return;
+      const aspect = srcW() / srcH();
+      const target = parseInt(els.targetPieces?.value) || 64;
+      const grid = calculateProportionalGrid(target, aspect);
+      els.cols.value = grid.cols;
+      els.rows.value = grid.rows;
+      regenerate();
+    }
+    if (els.calcGridBtn) els.calcGridBtn.addEventListener("click", applyTargetGrid);
+    if (els.targetPieces) els.targetPieces.addEventListener("change", applyTargetGrid);
+
+    els.cols.addEventListener("input", () => {
+      if (els.lockAspect && els.lockAspect.checked && state.img) {
+        const aspect = srcW() / srcH();
+        const c = Math.max(1, Math.min(30, parseInt(els.cols.value) || 1));
+        const r = Math.max(1, Math.min(30, Math.round(c / aspect)));
+        els.rows.value = r;
+        if (els.targetPieces) els.targetPieces.value = c * r;
+      }
+      regenerate();
+    });
+
+    els.rows.addEventListener("input", () => {
+      if (els.lockAspect && els.lockAspect.checked && state.img) {
+        const aspect = srcW() / srcH();
+        const r = Math.max(1, Math.min(30, parseInt(els.rows.value) || 1));
+        const c = Math.max(1, Math.min(30, Math.round(r * aspect)));
+        els.cols.value = c;
+        if (els.targetPieces) els.targetPieces.value = c * r;
+      }
+      regenerate();
+    });
+
+    if (els.lockAspect) {
+      els.lockAspect.addEventListener("change", () => {
+        if (els.lockAspect.checked && state.img) {
+          const aspect = srcW() / srcH();
+          const target = parseInt(els.targetPieces?.value) || ((parseInt(els.cols.value) || 8) * (parseInt(els.rows.value) || 5)) || 64;
+          const grid = calculateProportionalGrid(target, aspect);
+          els.cols.value = grid.cols;
+          els.rows.value = grid.rows;
+        }
+        regenerate();
+      });
+    }
+
+    ["seed", "tabSize", "piecePx", "gapPx", "edgeMargin"].forEach((id) => {
       els[id].addEventListener("input", id === "tabSize" || id === "piecePx" || id === "gapPx" || id === "edgeMargin" ? regenSoon : regenerate);
     });
     ["paperSize", "printDpi", "paperFit"].forEach((id) => {
